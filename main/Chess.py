@@ -2,60 +2,50 @@ from tkinter import Tk, Canvas
 from PIL import Image, ImageTk
 from abc import ABC, abstractmethod
 
+# In pixels
 boardSize = 400
 squareWIDTH = 50
 boardWIDTH = squareWIDTH * 8
-orthogonalDirections = [[0, 1], [1, 0], [0, -1], [-1, 0]]
-diagonalDirections = [[1, 1], [1, -1], [-1, -1], [-1, 1]]
 
-turn = 0
+
+orthogonalDirections = [[0, 1], [1, 0], [0, -1], [-1, 0]]  # [Up, Right, Down, Left]
+diagonalDirections = [[1, 1], [1, -1], [-1, -1], [-1, 1]]  # [Up-Right, Down-Right, Down-Left, Up Left]
+
+TURN = 0
 
 
 def main():
 
+    # Initialisation of the GUI
     board = Tk()
     board.title("Chess")
     canvas = Canvas(board, width=boardSize, height=boardSize, highlightthickness=0)
     canvas.pack()
 
+    # Converts coordinates in pixel position
     def convert_logical_to_grid_position(logical_position):
         return [logical_position[0] * squareWIDTH, logical_position[1] * squareWIDTH]
 
+    # Converts pixel position in coordinates
     def convert_grid_to_logical_position(grid_position):
         return [grid_position[0] // squareWIDTH, grid_position[1] // squareWIDTH]
 
+    # Opens and identifies the given image and makes it compatible with Tkinter (Receives a .png)
     def piece_images(img):
         piece_image = ImageTk.PhotoImage(Image.open(img).convert("RGBA"))
         return piece_image
 
     class Pieces(ABC):
-        def __init__(self, logical_position, img, side):
-            self.l_pos = logical_position
+        def __init__(self, logical_position, img, side: int):
+            self.l_pos = logical_position  # Current coordinates of the piece
             self.image = img
             self.isSelected = False
             self.allies = None
             self.enemies = None
-            self.is_white = side
+            self.is_white = side  # 0 if black, 1 if white
             self.first_move = True
 
-        def targeted_pieces(self):
-            targets = [[k for j in i for k in self.enemies if k.l_pos == j] for i in self.possible_takes()]
-            return targets
-
-        def is_pinned(self):
-            for i in self.enemies:
-                for j in i.possible_takes():
-                    is_blocker = 0
-                    pos = 0
-                    for k in j:
-                        if isinstance(k, King) and pos == 1 and is_blocker:
-                            return [i.l_pos] + [y for x in i.piece_xray() for y in x if self.l_pos in x]
-
-                        if k == self and pos == 0:
-                            is_blocker = 1
-                        pos += 1
-            return []
-
+        # Initializes self.allies, self.enemies and is_white
         def team(self):
             if self in pieces["w"]:
                 self.allies = pieces["w"]
@@ -66,41 +56,33 @@ def main():
                 self.enemies = pieces["w"]
                 self.is_white = 0
 
-        def draw_piece(self):
-            grid_position = convert_logical_to_grid_position(self.l_pos)
-            canvas.create_image(grid_position[0], grid_position[1], image=self.image, anchor="nw")
-            if self.isSelected:
-                self.draw_selection(grid_position)
-
+        # Places the selection image on a given position
         def draw_selection(self, grid_position):
             canvas.create_image(grid_position[0], grid_position[1], image=selectedImage, anchor="nw")
             for position in self.allowed_moves():
                 logical_position = convert_logical_to_grid_position(position)
                 canvas.create_image(logical_position[0], logical_position[1], image=allowedMoveImage, anchor="nw")
 
+        # Places the piece's image on the GUI and calls draw_selection on a piece if it is selected
+        def draw_piece(self):
+            grid_position = convert_logical_to_grid_position(self.l_pos)
+            canvas.create_image(grid_position[0], grid_position[1], image=self.image, anchor="nw")
+            if self.isSelected:
+                self.draw_selection(grid_position)
+
+        # Removes a piece from its team (Removes it from the board)
         def obliteration(self):
             self.allies.remove(self)
 
+        # This function is defined in the piece's subclass
         @abstractmethod
         def move_pattern(self):
             pass
 
+        # Applies move pattern to a piece current position and removes the moves that are not in the board
         def piece_xray(self):
             move_pat_from_pos = [[[j[0] + self.l_pos[0], j[1] + self.l_pos[1]] for j in i] for i in self.move_pattern()]
             return [[b for b in a if 0 <= b[0] <= 8 and 0 <= b[1] <= 8]for a in move_pat_from_pos]
-
-        def possible_takes(self):
-            nff = []
-            for i in self.piece_xray():
-                direction = []
-                for j in i:
-                    if j in [x.l_pos for x in self.allies]:
-                        break
-                    else:
-                        direction.append(j)
-                nff.append(direction)
-            targets = [[k for j in i for k in self.enemies if k.l_pos == j] for i in nff]
-            return targets
 
         def directions_xray(self):
             pmd = []
@@ -116,6 +98,36 @@ def main():
                 pmd.append(direction)
             return pmd
 
+        def possible_moves(self):
+            realistic_moves = []
+
+            for i in self.piece_xray():
+                for j in i:
+                    if j in [x.l_pos for x in self.allies]:
+                        break
+                    else:
+                        realistic_moves.append(j)
+                        if j in [x.l_pos for x in self.enemies]:
+                            break
+            return realistic_moves
+
+        def possible_takes(self):
+            nff = []
+            for i in self.piece_xray():
+                direction = []
+                for j in i:
+                    if j in [x.l_pos for x in self.allies]:
+                        break
+                    else:
+                        direction.append(j)
+                nff.append(direction)
+            targets = [[k for j in i for k in self.enemies if k.l_pos == j] for i in nff]
+            return targets
+
+        def targeted_pieces(self):
+            targets = [[k for j in i for k in self.enemies if k.l_pos == j] for i in self.possible_takes()]
+            return targets
+
         def defended_squares(self):
             defended_pieces = []
 
@@ -129,18 +141,19 @@ def main():
                             break
             return defended_pieces
 
-        def possible_moves(self):
-            realistic_moves = []
+        def is_pinned(self):
+            for i in self.enemies:
+                for j in i.possible_takes():
+                    is_blocker = 0
+                    pos = 0
+                    for k in j:
+                        if isinstance(k, King) and pos == 1 and is_blocker:
+                            return [i.l_pos] + [y for x in i.piece_xray() for y in x if self.l_pos in x]
 
-            for i in self.piece_xray():
-                for j in i:
-                    if j in [x.l_pos for x in self.allies]:
-                        break
-                    else:
-                        realistic_moves.append(j)
-                        if j in [x.l_pos for x in self.enemies]:
-                            break
-            return realistic_moves
+                        if k == self and pos == 0:
+                            is_blocker = 1
+                        pos += 1
+            return []
 
         def allowed_moves(self):
             if self.is_pinned():
@@ -347,7 +360,7 @@ def main():
             item.team()
 
     def team_playing():
-        if turn % 2 == 0:
+        if TURN % 2 == 0:
             return ["w", "b"]
         else:
             return ["b", "w"]
@@ -446,8 +459,8 @@ def main():
                                 j.team()
 
                     king_status()
-                    global turn
-                    turn += 1
+                    global TURN
+                    TURN += 1
 
             el_piece.isSelected = False
         else:
