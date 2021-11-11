@@ -1,7 +1,7 @@
-#Description
+# Description
 This program is a 2player chess game.
 
-##Installation
+## Installation
 To be able to run this program, you'll need Tkinter and Pillow.
 
 ### Library installation:
