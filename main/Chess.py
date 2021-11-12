@@ -84,6 +84,7 @@ def main():
             move_pat_from_pos = [[[j[0] + self.l_pos[0], j[1] + self.l_pos[1]] for j in i] for i in self.move_pattern()]
             return [[b for b in a if 0 <= b[0] < 8 and 0 <= b[1] < 8]for a in move_pat_from_pos]
 
+        # Same as piece_xray, but the directions stop at the first on the first enemy
         def directions_xray(self):
             pmd = []
             for i in self.piece_xray():
@@ -98,6 +99,7 @@ def main():
                 pmd.append(direction)
             return pmd
 
+        # Stops the directions before the first ally and on the
         def possible_moves(self):
             realistic_moves = []
 
