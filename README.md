@@ -1,3 +1,6 @@
+# Presentation
+I made this game in order to teach myself python and programmation in general. In the making of this project, I decided to completely abstain from looking up chess game code example so I could figure out everything myself. Therefore, everything in this project comes from me except the libraries I used for the graphical interface.
+
 # Description
 This program is a 2player chess game.
 
@@ -16,4 +19,4 @@ Once the libraries are installed, you just have to clone the project and run the
 To move the pieces, just click on a piece to highlight all of its possible moves. Then, just click on one of the highlighted squares to move the piece. Please note that the piece can only move at their turn. 
 
 ## Disclaimer
-This project is in by no mean final and contains its fair share of bugs.
+This project is by no means final and contains its fair share of bugs.
