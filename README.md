@@ -4,7 +4,7 @@ This program is a 2player chess game.
 ## Installation
 To be able to run this program, you'll need Tkinter and Pillow. Of course, Python is also needed.
 
-### Library installation:
+### Library installation with pip:
 On Windows, open the command prompt and run these commands:
 ```bash
 pip install tk
